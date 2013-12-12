@@ -18,9 +18,11 @@ public class ASyncFoo extends SyncFoo {
 		if (resolver == null)
 			return super.foo(delay);
 
+		System.out.println("Creating thread for " + id);
 		Thread t = new Thread() {
 			public void run() {
 				try {
+					System.out.println("Calling foo inside thread " + id);
 					String n = ASyncFoo.super.foo(delay);
 					resolver.resolve(n);
 				} catch (Exception e) {
@@ -30,10 +32,12 @@ public class ASyncFoo extends SyncFoo {
 		};
 		t.start();
 
+		System.out.println("Async return for " + id);
 		return null;
 	}
 
 	@Reference
+	public
 	void setAsync(Async async) {
 		this.async = async;
 	}

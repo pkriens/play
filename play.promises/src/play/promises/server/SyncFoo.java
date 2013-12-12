@@ -4,7 +4,7 @@ import play.promises.service.Foo;
 
 public class SyncFoo implements Foo {
 
-	private String id;
+	protected String id;
 
 	public SyncFoo(String id) {
 		this.id = id;
@@ -12,9 +12,9 @@ public class SyncFoo implements Foo {
 
 	public String foo(int delay) {
 		try {
-			System.out.println("doing " + delay + " for " + id);
+			System.out.println("foo("+id+") " + delay );
 			Thread.sleep(delay * 1000);
-			System.out.println("done " + id);
+			System.out.println("foo("+id+") " + delay + " done ");
 		} catch (InterruptedException e) {
 		}
 		return id;

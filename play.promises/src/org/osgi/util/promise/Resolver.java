@@ -14,9 +14,12 @@ public class Resolver<T> {
 		@Override
 		public T get() throws InvocationTargetException, InterruptedException {
 			synchronized (lock) {
-				while (!resolved)
+				while (!resolved) {
+					System.out.println("wait for get");
 					lock.wait();
+				}
 
+				System.out.println("get is ready = " + value);
 				if (error != null)
 					throw new InvocationTargetException(error);
 				else
@@ -151,6 +154,7 @@ public class Resolver<T> {
 	}
 
 	private void done(T value, Throwable error) {
+		System.out.println("resolved " + value + " " + error);
 		synchronized (lock) {
 			if (resolved)
 				throw new IllegalStateException("Already resolved " + this);
