@@ -26,6 +26,7 @@ public class AsyncImpl implements Async {
 		nulls.put(double.class, Double.valueOf(0));
 	}
 	ThreadLocal<Resolver<?>> resolvers = new ThreadLocal<>();
+	ThreadLocal<Object> active = new ThreadLocal<>();
 
 	class Handler<T> implements InvocationHandler {
 		private T target;
@@ -43,6 +44,7 @@ public class AsyncImpl implements Async {
 			assert resolvers.get() == null;
 
 			try {
+				active.set(true);
 				resolvers.set(null);
 				Object result = method.invoke(target, args);
 				if (resolvers.get() == null) {
@@ -55,6 +57,8 @@ public class AsyncImpl implements Async {
 				System.out.println("exception " + method.getName() + "("
 						+ Arrays.toString(args) + ") " + e);
 				throw e;
+			} finally {
+				active.set(null);
 			}
 			Class<?> c = method.getReturnType();
 			if (c.isPrimitive()) {
@@ -108,9 +112,18 @@ public class AsyncImpl implements Async {
 	@Override
 	public <T> Resolver<T> getResolver() {
 		System.out.println("get resolver");
-		Resolver<T> resolver = new Resolver<>();
-		resolvers.set(resolver);
-		return resolver;
+		if (active.get()!= null) {
+			Resolver<T> resolver = new Resolver<>();
+			resolvers.set(resolver);
+			return resolver;
+		} else
+			return null;
+	}
+
+	@Override
+	public <R> Promise<R> deferred(R r) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

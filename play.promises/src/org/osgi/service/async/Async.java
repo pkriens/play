@@ -7,5 +7,6 @@ import org.osgi.util.promise.Resolver;
 public interface Async {
 	<T> T mediate(T target);
 	<R> Promise<R> invoke(R r);
+	<R> Promise<R> deferred(R r);
 	<T> Resolver<T> getResolver();
 }
