@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class Resolver<T> {
 	Object lock = new Object();
 	boolean resolved;
+	boolean defer;
 	T value;
 	Throwable error;
 	ConcurrentLinkedDeque<Runnable> onresolve = new ConcurrentLinkedDeque<>();
@@ -62,6 +63,8 @@ public class Resolver<T> {
 				throws Exception {
 
 			final Resolver<R> nextStage = new Resolver<R>();
+			if (defer)
+				nextStage.defer = true;
 
 			onresolve(new Runnable() {
 				@Override
@@ -117,6 +120,13 @@ public class Resolver<T> {
 		private <R> void stage(final Resolver<R> nextStage,
 				final Success<R, T> ok, final Failure<T> fail) {
 			try {
+				// 
+				// Since we inherit the defer, we need to
+				// make sure that when we callback we set
+				// the defer to false for the next stage or we
+				// we loose those events
+				//
+				nextStage.defer = false;
 				if (error == null)
 					success(nextStage, ok);
 				else
@@ -189,6 +199,30 @@ public class Resolver<T> {
 				nextStage.fail(e);
 			}
 		}
+
+		/**
+		 * Do not call back until the launch is called. Defer is inherited by
+		 * any chained promises ({@link #then(Success)} and
+		 * {@link #then(Success, Failure)}.
+		 */
+		@Override
+		public Promise<T> defer() {
+			Resolver.this.defer = true;
+			return this;
+		}
+
+		/**
+		 * If defer is called, the launch method must be called to call the
+		 * callbacks.
+		 */
+		@Override
+		public void launch() {
+			synchronized (lock) {
+				assert defer;
+				defer = false;
+			}
+			dequeue();
+		}
 	};
 
 	/**
@@ -259,14 +293,13 @@ public class Resolver<T> {
 	}
 
 	/**
-	 * Dequeue any callbacks if resolved. The access to the resolved 
-	 * variable is not synchronized because it does not matter. This method
-	 * is called after all the methods that change the list of callback
-	 * and the resolve state. It is therefore impossible (in theory) to miss
-	 * dequeueing
+	 * Dequeue any callbacks if resolved. The access to the resolved variable is
+	 * not synchronized because it does not matter. This method is called after
+	 * all the methods that change the list of callback and the resolve state.
+	 * It is therefore impossible (in theory) to miss dequeueing
 	 */
 	private void dequeue() {
-		if (!resolved)
+		if (!resolved || defer)
 			return;
 
 		Runnable r;
@@ -281,6 +314,7 @@ public class Resolver<T> {
 
 	/**
 	 * Convenience to create a resolved Promise with an immediate value
+	 * 
 	 * @param value
 	 * @return
 	 */

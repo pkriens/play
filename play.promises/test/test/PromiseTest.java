@@ -5,6 +5,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
 
+import org.osgi.util.promise.Failure;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.Promises;
 import org.osgi.util.promise.Resolver;
@@ -15,20 +16,104 @@ import junit.framework.TestCase;
 public class PromiseTest extends TestCase {
 	static Timer timer = new Timer();
 
-	
-	
+	/**
+	 * Test if the chain calls can be deferred.
+	 */
+
+	public void testDeferredChain() throws Exception {
+		Resolver<String> r = new Resolver<String>();
+		final Promise<String> p1 = r.getPromise();
+		final Semaphore s = new Semaphore(0);
+
+		// Single callback. Will add one to s
+
+		Success<String, String> doubler = new Success<String, String>() {
+
+			@Override
+			public Promise<String> call(Promise<String> promise)
+					throws Exception {
+				System.out.println("get : " + promise.get());
+				s.release();
+				return Resolver.getDirectPromise(promise.get() + promise.get());
+			}
+		};
+
+		// Create a promise that is deferred
+
+		final Promise<String> p2 = p1.defer();
+
+		// Resolve it with some value. So normally we would
+		// get callbacks immediately
+
+		r.resolve("x");
+
+		// Start a chain with 3 doublers. if they would
+		// callback immediate (since the promise is resolved)
+		// they would set the semaphore to 3
+
+		p2.then(doubler).then(doubler).then(doubler);
+
+		// See if this really has not happened.
+
+		assertEquals(0, s.availablePermits());
+
+		// Now execute any deferred callbacks.
+
+		p2.launch();
+
+		// And see if they have happend
+
+		assertEquals(3, s.availablePermits());
+	}
+
+	/**
+	 * Test that the onresolved callback is not executed until launch when in
+	 * deferred mode.
+	 */
+	public void testDeferred() throws Exception {
+		Resolver<String> r = new Resolver<String>();
+		Promise<String> p1 = r.getPromise();
+		final Semaphore s = new Semaphore(0);
+
+		p1.defer().onresolve(new Runnable() {
+
+			@Override
+			public void run() {
+				s.release();
+			}
+		});
+
+		assertEquals(0, s.availablePermits());
+		r.resolve("done");
+		assertEquals(0, s.availablePermits());
+		p1.launch();
+		assertEquals(1, s.availablePermits());
+		assertEquals("done", p1.get());
+	}
+
+	/**
+	 * Test if we can parallelize the Promises
+	 * 
+	 * We use the same promise since that is perfectly possible.
+	 */
 	public void testParallel() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		Promise<String> p1 = r.getPromise();
-		
-		Promise<String[]> parallel = Promises.parallel(p1,p1,p1,p1,p1,p1);
-		
+
+		Promise<String[]> parallel = Promises.parallel(p1, p1, p1, p1, p1, p1);
+
 		r.resolve("x");
 		assertEquals("[x, x, x, x, x, x]", Arrays.toString(parallel.get()));
 	}
-	
-	
-	
+
+	/**
+	 * Test if we can get the errors when there is a chain. The idea is that you
+	 * only specify the failure callback on the last
+	 * {@link Promise#then(Success,Failure)} method. Any failures will bubble
+	 * up.
+	 * 
+	 * @throws Exception
+	 */
 	public void testErrorsChain() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		final Promise<String> p1 = r.getPromise();
@@ -58,16 +143,40 @@ public class PromiseTest extends TestCase {
 			}
 		});
 
+		Exception e = new Exception("Y");
 		assertEquals(0, s.availablePermits());
-		r.fail(new Exception("Y"));
+		r.fail(e);
 		assertEquals(1, s.availablePermits());
+
+		assertEquals(e, p2.getError());
 	}
+
+	/**
+	 * Check if errors are properly transferred to the callbacks.
+	 * 
+	 * @throws Exception
+	 */
 
 	public void testErrors() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		final Promise<String> p1 = r.getPromise();
 		final Semaphore s = new Semaphore(0);
 
+		//
+		// Check a chain bubble up
+		//
+		p1.then(null, new Failure<String>() {
+
+			@Override
+			public void fail(Promise<String> promise) throws Exception {
+				s.release();
+			}
+
+		});
+
+		//
+		// And the normal resolve
+		//
 		p1.onresolve(new Runnable() {
 
 			@Override
@@ -80,11 +189,20 @@ public class PromiseTest extends TestCase {
 				}
 			}
 		});
+		// not resolved yet
 		assertEquals(0, s.availablePermits());
+
+		// resolve it with an error
 		r.fail(new Exception("X"));
-		assertEquals(1, s.availablePermits());
+		assertEquals(2, s.availablePermits());
 	}
 
+	/**
+	 * Check if a promise can be called after it has already called back. This
+	 * is a common use case for promises. I.e. you create a promise and
+	 * whenever someone needs the value he uses 'then' instead of directly getting
+	 * the value. Does take some getting used to.
+	 */
 	public void testRepeat() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		Promise<String> p1 = r.getPromise();
@@ -123,6 +241,9 @@ public class PromiseTest extends TestCase {
 		assertEquals(Integer.valueOf(10), p2.get());
 	}
 
+	/**
+	 * Test the basic chaining functionality.
+	 */
 	public void testThen() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		Promise<String> p1 = r.getPromise();
@@ -163,6 +284,9 @@ public class PromiseTest extends TestCase {
 		return n.getPromise();
 	}
 
+	/**
+	 * Most simple basic test
+	 */
 	public void testSimple() throws Exception {
 		Resolver<String> r = new Resolver<String>();
 		Promise<String> p = r.getPromise();

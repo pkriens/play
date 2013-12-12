@@ -4,24 +4,30 @@ import java.lang.reflect.InvocationTargetException;
 
 /**
  * A Promise represents a future value, it handles the interaction to do
- * asynchronous processing. Promises are created with a {@link Resolver}. A 
- * Resolver is the 'controller' of the Promise. The Promise is used by the caller of
- * an asynchronous function to get the result or handle the errors. It can either
- * get a callback when the Promise is resolved with a value or an error, or it 
- * can be used in chaining. With chaining it provides a callbacks that receives the
- * resolved promise (with a value) and then returns a new promise.
+ * asynchronous processing. Promises are created with a {@link Resolver}. A
+ * Resolver is the 'controller' of the Promise. The Promise is used by the
+ * caller of an asynchronous function to get the result or handle the errors. It
+ * can either get a callback when the Promise is resolved with a value or an
+ * error, or it can be used in chaining. With chaining it provides a callbacks
+ * that receives the resolved promise (with a value) and then returns a new
+ * promise.
  * <p>
- * Both onresolve and chaining (then) can be repeated any number of times, even long after
- * the value has been resolved.
+ * Both onresolve and chaining (then) can be repeated any number of times, even
+ * long after the value has been resolved.
  * <p>
- * Simple on resolve time 
+ * Simple on resolve time
+ * 
  * <pre>
- *  	final Promise<String> foo = foo();
- *      foo.onresolve( new Runnable() { public void run() {
- *      	 System.out.println( foo.get() );
- *      } });
+ * final Promise&lt;String&gt; foo = foo();
+ * foo.onresolve(new Runnable() {
+ * 	public void run() {
+ * 		System.out.println(foo.get());
+ * 	}
+ * });
  * </pre>
+ * 
  * Chaining
+ * 
  * <pre>
  *      Success<String,String> doubler = new Success<>() {
  *      	public String call(Promise<String> p) {
@@ -118,4 +124,25 @@ public interface Promise<T> {
 	 */
 	Throwable getError() throws IllegalStateException, InterruptedException;
 
+	/**
+	 * In general the callbacks are executed when the promise is resolved.
+	 * However, this means that a callback can get executed before the
+	 * {@link #then(Success)} or {@link #onresolve(Runnable)} methods have
+	 * returned. Some sissies don't like that. So for those quiche eaters, the
+	 * defer method will defer from calling anything back until the
+	 * {@link #launch()} method is called.
+	 * <p>
+	 * The defer status is inherited for the {@link #then(Success)} chain.
+	 * 
+	 * @return this
+	 */
+	Promise<T> defer();
+
+	/**
+	 * If the {@link #defer()} method has been called, this method will initiate
+	 * the callbacks. This can happen directly (i.e. they could be executed
+	 * before this method returns) or later when the promise is not resolved
+	 * yet.
+	 */
+	void launch();
 }
