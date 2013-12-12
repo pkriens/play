@@ -14,13 +14,42 @@ import play.promises.service.Foo;
 
 public class AsyncTest extends TestCase {
 
+	public void testDeferredCallback() throws Exception {
+		Async async = new AsyncImpl();
+
+		SyncFoo sf = new SyncFoo("sf");
+		Foo msf = async.mediate(sf);
+		
+		Promise<String> p = async.deferred(msf.foo(2));
+		assertTrue( p.isDone());
+		
+		final Semaphore s = new Semaphore(0);
+		
+		p.onresolve(new Runnable(){
+
+			@Override
+			public void run() {
+				s.release();
+			}});
+
+		assertEquals(0, s.availablePermits());
+
+		p.launch();
+		assertEquals(1, s.availablePermits());
+		
+		assertEquals( "sf", p.get());
+		
+		System.out.println("done");
+	}
+
 	public void testCallback() throws Exception {
 		Async async = new AsyncImpl();
 
 		ASyncFoo af = new ASyncFoo("af");
 		af.setAsync(async);
-		
+
 		Foo maf = async.mediate(af);
+		
 		Promise<String> p = async.invoke(maf.foo(5));
 		final Semaphore s = new Semaphore(0);
 		

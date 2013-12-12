@@ -13,6 +13,11 @@ import org.osgi.service.async.Async;
 import org.osgi.util.promise.Promise;
 import org.osgi.util.promise.Resolver;
 
+/**
+ * Provide an impemen
+ * @author aqute
+ *
+ */
 public class AsyncImpl implements Async {
 	static Map<Class<?>, Object> nulls = new HashMap<>();
 	static {
@@ -25,6 +30,10 @@ public class AsyncImpl implements Async {
 		nulls.put(float.class, Float.valueOf(0));
 		nulls.put(double.class, Double.valueOf(0));
 	}
+	
+	// TODO This likely needs to be pushed on a stack
+	// for potential recursion. Not got my head around it yet
+	
 	ThreadLocal<Resolver<?>> resolvers = new ThreadLocal<>();
 	ThreadLocal<Object> active = new ThreadLocal<>();
 
@@ -122,8 +131,7 @@ public class AsyncImpl implements Async {
 
 	@Override
 	public <R> Promise<R> deferred(R r) {
-		// TODO Auto-generated method stub
-		return null;
+		return invoke(r).defer();
 	}
 
 }

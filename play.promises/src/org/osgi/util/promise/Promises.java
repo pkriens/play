@@ -18,24 +18,16 @@ public class Promises {
 		private Throwable[] exceptions;
 
 		public ParallelException(Object[] values, Throwable[] exceptions) {
-			this.setValues(values);
-			this.setExceptions(exceptions);
+			this.values=values;
+			this.exceptions=exceptions;
 		}
 
 		public Throwable[] getExceptions() {
 			return exceptions;
 		}
 
-		public void setExceptions(Throwable[] exceptions) {
-			this.exceptions = exceptions;
-		}
-
 		public Object[] getValues() {
 			return values;
-		}
-
-		public void setValues(Object[] values) {
-			this.values = values;
 		}
 
 	}

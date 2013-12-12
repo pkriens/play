@@ -6,5 +6,9 @@ package org.osgi.util.promise;
  * @param <Value> The value type of the promise.
  */
 public interface Failure<Value> {
+	/**
+	 * Called when the promise was resolved with an error.
+	 * @param promise the promise this callback was registered on
+	 */
 	void fail(Promise<Value> promise) throws Exception;
 }
