@@ -1,6 +1,9 @@
-*.class
-
-# Package Files #
-*.jar
-*.war
-*.ear
+/*/bin/
+/*/bin_test/
+/*/generated/
+/*/doc/
+/cnf/cache/
+.DS_Store
+Thumbs.db
+.metadata/
+scrapbook.jpage

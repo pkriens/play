@@ -1,0 +1,10 @@
+-buildpath: aQute.libg;version=2.7.4.20130927-173307,\
+	jline;version=2.11.0
+	
+	
+Private-Package: play.*, jline.*, aQute.lib*
+
+Main-Class: play.autocomplete.Main
+
+JPM-Command: play.autocomplete
+Bundle-Version: 1.0.0
