@@ -1,7 +1,7 @@
 package play.promises.server;
 
 import org.osgi.service.async.Async;
-import org.osgi.util.promise.Resolver;
+import org.osgi.util.promise.Deferred;
 
 import aQute.bnd.annotation.component.Reference;
 
@@ -14,7 +14,7 @@ public class ASyncFoo extends SyncFoo {
 
 	@Override
 	public String foo(final int delay) {
-		final Resolver<String> resolver = async.getResolver();
+		final Deferred<String> resolver = async.createDeferred();
 		if (resolver == null)
 			return super.foo(delay);
 

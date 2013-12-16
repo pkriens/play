@@ -32,14 +32,14 @@ public class Client {
 		this.actualAsync = async.mediate(unmediatedAsync);
 
 		System.out.println("Before");
-		Promise<String> p = async.invoke(actualAsync.foo(2));
+		Promise<String> p = async.call(actualAsync.foo(2));
 		p.then(new Success<String, String>() {
 
 			@Override
 			public Promise<String> call(Promise<String> promise) throws Exception {
 				System.out.println("In ");
 				System.out.println( promise.get());
-				return async.invoke(actualAsync.foo(4));
+				return async.call(actualAsync.foo(4));
 			}
 		}, failure);
 		System.out.println("After");

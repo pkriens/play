@@ -20,7 +20,7 @@ public class AsyncTest extends TestCase {
 		SyncFoo sf = new SyncFoo("sf");
 		Foo msf = async.mediate(sf);
 		
-		Promise<String> p = async.deferred(msf.foo(2));
+		Promise<String> p = async.hold(msf.foo(2));
 		assertTrue( p.isDone());
 		
 		final Semaphore s = new Semaphore(0);
@@ -50,7 +50,7 @@ public class AsyncTest extends TestCase {
 
 		Foo maf = async.mediate(af);
 		
-		Promise<String> p = async.invoke(maf.foo(5));
+		Promise<String> p = async.call(maf.foo(5));
 		final Semaphore s = new Semaphore(0);
 		
 		p.onresolve(new Runnable(){
@@ -77,11 +77,11 @@ public class AsyncTest extends TestCase {
 		Foo maf = async.mediate(af);
 		
 		assertEquals( "sf", sf.foo(1));
-		assertEquals( "sf", async.invoke(sf.foo(1)).get());
+		assertEquals( "sf", async.call(sf.foo(1)).get());
 		assertEquals( "af", af.foo(1));
-		assertEquals( "af", async.invoke(af.foo(1)).get());
-		assertEquals( "sf", async.invoke(msf.foo(1)).get());
-		assertEquals( "af", async.invoke(maf.foo(1)).get());
+		assertEquals( "af", async.call(af.foo(1)).get());
+		assertEquals( "sf", async.call(msf.foo(1)).get());
+		assertEquals( "af", async.call(maf.foo(1)).get());
 		
 		System.out.println("done");
 	}

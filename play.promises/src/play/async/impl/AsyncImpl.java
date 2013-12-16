@@ -11,7 +11,7 @@ import java.util.Set;
 
 import org.osgi.service.async.Async;
 import org.osgi.util.promise.Promise;
-import org.osgi.util.promise.Resolver;
+import org.osgi.util.promise.Deferred;
 
 /**
  * Provide an impemen
@@ -34,7 +34,7 @@ public class AsyncImpl implements Async {
 	// TODO This likely needs to be pushed on a stack
 	// for potential recursion. Not got my head around it yet
 	
-	ThreadLocal<Resolver<?>> resolvers = new ThreadLocal<>();
+	ThreadLocal<Deferred<?>> deferreds = new ThreadLocal<>();
 	ThreadLocal<Object> active = new ThreadLocal<>();
 
 	class Handler<T> implements InvocationHandler {
@@ -50,13 +50,13 @@ public class AsyncImpl implements Async {
 			System.out.println("invoke " + method.getName() + "("
 					+ Arrays.toString(args) + ")");
 
-			assert resolvers.get() == null;
+			assert deferreds.get() == null;
 
 			try {
 				active.set(true);
-				resolvers.set(null);
+				deferreds.set(null);
 				Object result = method.invoke(target, args);
-				if (resolvers.get() == null) {
+				if (deferreds.get() == null) {
 					System.out.println("was not async " + method.getName()
 							+ "(" + Arrays.toString(args) + ")");
 					return result;
@@ -103,35 +103,35 @@ public class AsyncImpl implements Async {
 	}
 
 	@Override
-	public <R> Promise<R> invoke(R value) {
-		if (resolvers.get() != null) {
+	public <R> Promise<R> call(R value) {
+		if (deferreds.get() != null) {
 			System.out.println("invoke result  " + value + " is async");
 			@SuppressWarnings("unchecked")
-			Promise<R> promise = (Promise<R>) resolvers.get().getPromise();
-			resolvers.set(null);
+			Promise<R> promise = (Promise<R>) deferreds.get().getPromise();
+			deferreds.set(null);
 			return promise;
 		} else {
 			System.out.println("invoke result  " + value + " is sync");
-			Resolver<R> resolver = new Resolver<>();
+			Deferred<R> resolver = new Deferred<>();
 			resolver.resolve(value);
 			return resolver.getPromise();
 		}
 	}
 
 	@Override
-	public <T> Resolver<T> getResolver() {
+	public <T> Deferred<T> createDeferred() {
 		System.out.println("get resolver");
 		if (active.get()!= null) {
-			Resolver<T> resolver = new Resolver<>();
-			resolvers.set(resolver);
+			Deferred<T> resolver = new Deferred<>();
+			deferreds.set(resolver);
 			return resolver;
 		} else
 			return null;
 	}
 
 	@Override
-	public <R> Promise<R> deferred(R r) {
-		return invoke(r).defer();
+	public <R> Promise<R> hold(R r) {
+		return call(r).hold();
 	}
 
 }

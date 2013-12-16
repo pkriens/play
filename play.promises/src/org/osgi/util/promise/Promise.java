@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 
 /**
  * A Promise represents a future value, it handles the interaction to do
- * asynchronous processing. Promises are created with a {@link Resolver}. A
+ * asynchronous processing. Promises are created with a {@link Deferred}. A
  * Resolver is the 'controller' of the Promise. The Promise is used by the
  * caller of an asynchronous function to get the result or handle the errors. It
  * can either get a callback when the Promise is resolved with a value or an
@@ -30,8 +30,8 @@ import java.lang.reflect.InvocationTargetException;
  * 
  * <pre>
  *      Success<String,String> doubler = new Success<>() {
- *      	public String call(Promise<String> p) {
- *              return Resolver.getDirectPromise(p.get()+p.get());
+ *      	public Promise{@code<String>} call(Promise{@code<String>} p) {
+ *              return Deferred.getDirectPromise(p.get()+p.get());
  *          }
  *      };
  *  	final Promise<String> foo = foo().then(doubler).then(doubler);
@@ -83,7 +83,8 @@ public interface Promise<T> {
 	<R> Promise<R> then(Success<R, T> success) throws Exception;
 
 	/**
-	 * Called when this promise is resolved with either an error or a value.
+	 * Called when this promise has been resolved with either an error or a
+	 * value. This method can be used at any time.
 	 * 
 	 * @param done
 	 *            the Runnable called when this promise is resolved.
@@ -136,10 +137,10 @@ public interface Promise<T> {
 	 * 
 	 * @return this
 	 */
-	Promise<T> defer();
+	Promise<T> hold();
 
 	/**
-	 * If the {@link #defer()} method has been called, this method will initiate
+	 * If the {@link #hold()} method has been called, this method will initiate
 	 * the callbacks. This can happen directly (i.e. they could be executed
 	 * before this method returns) or later when the promise is not resolved
 	 * yet.

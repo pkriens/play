@@ -42,7 +42,7 @@ public class Promises {
 	 */
 	@SafeVarargs
 	static public <T> Promise<T[]> parallel(Promise<T>... promises) throws Exception {
-		final Resolver<T[]> resolver = new Resolver<>();
+		final Deferred<T[]> resolver = new Deferred<>();
 		final AtomicInteger count = new AtomicInteger(promises.length);
 		final Throwable[] exceptions = new Throwable[promises.length];
 		@SuppressWarnings("unchecked")
