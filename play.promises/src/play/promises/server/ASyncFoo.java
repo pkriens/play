@@ -14,8 +14,8 @@ public class ASyncFoo extends SyncFoo {
 
 	@Override
 	public String foo(final int delay) {
-		final Deferred<String> resolver = async.createDeferred();
-		if (resolver == null)
+		final Deferred<String> deferred = async.createDeferred();
+		if (deferred == null)
 			return super.foo(delay);
 
 		System.out.println("Creating thread for " + id);
@@ -24,9 +24,9 @@ public class ASyncFoo extends SyncFoo {
 				try {
 					System.out.println("Calling foo inside thread " + id);
 					String n = ASyncFoo.super.foo(delay);
-					resolver.resolve(n);
+					deferred.resolve(n);
 				} catch (Exception e) {
-					resolver.fail(e);
+					deferred.fail(e);
 				}
 			}
 		};

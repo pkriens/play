@@ -5,8 +5,8 @@ import org.osgi.util.promise.Deferred;
 
 /**
  * An async service. This service can be used to call methods asynchronously if
- * the underlying implementor understands this service. Other services that are
- * unaware of the async service are executed synchronously.
+ * the underlying implementor understands this Async service. Other services
+ * that are unaware of the async service are executed synchronously.
  * <p>
  * To use this service, you need to have a service defined by an interface.
  * Using the {@link #mediate(Object)} method you turn the service then in a
@@ -14,21 +14,22 @@ import org.osgi.util.promise.Deferred;
  * <p>
  * When a method is called on the mediator, the async service will set a flag
  * that makes this invocation ok to go asynchronous. If the called object
- * understands async, it will ask the async service for a Resolver. If it does
- * not get this object, the invocation must be executed synchronously.
+ * understands async, it will ask the async service for a {@link Deferred}. If
+ * it does not get such an object, the invocation must be executed
+ * synchronously.
  * 
- * If it has a resolver, it should initiate the asynchronous request and return
- * the associated promise. If the async process is finished, it can signal the
- * result or error through the Resolver.
+ * If the implementation has a {@link Deferred}, it should initiate the
+ * asynchronous request. If the request is finished, it can signal the result or
+ * error through the {@link Deferred}.
  * <p>
- * To get the promise, the caller must invoke the asynchronous method specially/
+ * To get the promise, the caller must invoke the asynchronous method specially.
  * It should invoke it so that the result value (which could be a dummy) is
  * received by the {@link #hold(Object)} or {@link #call(Object)} method. Since
  * the async method is executed on the same thread by definition, the async
- * service can link the invocation of these methods to the Resolver that
- * potentially was created by the async method. If there was such a Resolver,
- * this is returned. Otherwise the return value is used to create an immediate
- * promise.
+ * service can link the invocation of these methods to the {@link Deferred} that
+ * potentially was created by the async method. If there was such a
+ * {@link Deferred}, this is returned. Otherwise the return value is used to
+ * create an immediate promise.
  */
 public interface Async {
 
@@ -81,10 +82,13 @@ public interface Async {
 	 * invoked synchronously and the implementation should not return until the
 	 * asynchronous request has been finalized. If it is not null, it should
 	 * return immediately and signal the result by resolving the returned
-	 * Deferred object. It is allowed that the Deferred is resolved with a failure
-	 * if the request surpasses a timeout.
+	 * Deferred object. It is allowed that the Deferred is resolved with a
+	 * failure if the request surpasses a timeout.
 	 * 
 	 * @return A deferred or null
+	 * 
+	 * TODO maybe we should hand it a Promise?
 	 */
 	<T> Deferred<T> createDeferred();
+	
 }
