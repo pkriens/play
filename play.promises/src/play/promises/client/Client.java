@@ -36,9 +36,9 @@ public class Client {
 		p.then(new Success<String, String>() {
 
 			@Override
-			public Promise<String> call(Promise<String> promise) throws Exception {
+			public Promise<String> call(String value) throws Exception {
 				System.out.println("In ");
-				System.out.println( promise.get());
+				System.out.println(value);
 				return async.call(actualAsync.foo(4));
 			}
 		}, failure);

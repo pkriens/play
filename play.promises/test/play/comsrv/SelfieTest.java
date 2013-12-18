@@ -28,9 +28,9 @@ public class SelfieTest extends TestCase {
 		Success<String, String> triple = new Success<String, String>() {
 
 			@Override
-			public Promise<String> call(Promise<String> promise)
+			public Promise<String> call(String value)
 					throws Exception {
-				return selfie.send("***" + promise.get() + "***");
+				return selfie.send("***" + value + "***");
 			}
 		};
 		String s = selfie.send("Hello").then(triple).then(triple).get();

@@ -16,5 +16,5 @@ public interface Success<Return,Value> {
 	 * @param promise
 	 * @return
 	 */
-	Promise<Return> call(Promise<Value> promise) throws Exception;
+	Promise<Return> call(Value value) throws Exception;
 }

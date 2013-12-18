@@ -30,11 +30,11 @@ public class PromiseTest extends TestCase {
 		Success<String, String> doubler = new Success<String, String>() {
 
 			@Override
-			public Promise<String> call(Promise<String> promise)
+			public Promise<String> call(String value)
 					throws Exception {
-				System.out.println("get : " + promise.get());
+				System.out.println("get : " + value);
 				s.release();
-				return Deferred.getDirectPromise(promise.get() + promise.get());
+				return Deferred.getDirectPromise(value + value);
 			}
 		};
 
@@ -122,10 +122,10 @@ public class PromiseTest extends TestCase {
 		Success<String, String> doubler = new Success<String, String>() {
 
 			@Override
-			public Promise<String> call(Promise<String> promise)
+			public Promise<String> call(String value)
 					throws Exception {
-				System.out.println(promise.get());
-				return Deferred.getDirectPromise(promise.get() + promise.get());
+				System.out.println(value);
+				return Deferred.getDirectPromise(value + value);
 			}
 		};
 		final Promise<String> p2 = p1.then(doubler).then(doubler).then(doubler);
@@ -231,11 +231,11 @@ public class PromiseTest extends TestCase {
 		Promise<Integer> p2 = p1.then(new Success<Integer, String>() {
 
 			@Override
-			public Promise<Integer> call(Promise<String> promise)
+			public Promise<Integer> call(String value)
 					throws Exception {
 				s.release();
 
-				return Deferred.getDirectPromise(Integer.parseInt(promise.get()));
+				return Deferred.getDirectPromise(Integer.parseInt(value));
 			}
 		});
 		assertEquals(Integer.valueOf(10), p2.get());
@@ -250,9 +250,9 @@ public class PromiseTest extends TestCase {
 		Promise<Integer> p2 = p1.then(new Success<Integer, String>() {
 
 			@Override
-			public Promise<Integer> call(final Promise<String> promise)
+			public Promise<Integer> call(final String value)
 					throws Exception {
-				return async(promise.get());
+				return async(value);
 			}
 
 		});
