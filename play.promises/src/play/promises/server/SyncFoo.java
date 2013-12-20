@@ -13,7 +13,7 @@ public class SyncFoo implements Foo {
 	public String foo(int delay) {
 		try {
 			System.out.println("foo("+id+") " + delay );
-			Thread.sleep(delay * 1000);
+			Thread.sleep(delay * 250);
 			System.out.println("foo("+id+") " + delay + " done ");
 		} catch (InterruptedException e) {
 		}

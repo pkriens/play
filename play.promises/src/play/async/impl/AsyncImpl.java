@@ -10,13 +10,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.osgi.service.async.Async;
-import org.osgi.util.promise.Promise;
+import org.osgi.service.async.AsyncDelegate;
 import org.osgi.util.promise.Deferred;
+import org.osgi.util.promise.Promise;
 
 /**
  * Provide an impemen
+ * 
  * @author aqute
- *
+ * 
  */
 public class AsyncImpl implements Async {
 	static Map<Class<?>, Object> nulls = new HashMap<>();
@@ -30,18 +32,15 @@ public class AsyncImpl implements Async {
 		nulls.put(float.class, Float.valueOf(0));
 		nulls.put(double.class, Double.valueOf(0));
 	}
-	
-	// TODO This likely needs to be pushed on a stack
-	// for potential recursion. Not got my head around it yet
-	
-	ThreadLocal<Deferred<?>> deferreds = new ThreadLocal<>();
-	ThreadLocal<Object> active = new ThreadLocal<>();
+	ThreadLocal<Promise<?>> results = new ThreadLocal<>();
 
-	class Handler<T> implements InvocationHandler {
+	class AsyncHandler<T> implements InvocationHandler {
 		private T target;
+		private boolean async;
 
-		public Handler(T target) {
+		public AsyncHandler(T target) {
 			this.target = target;
+			this.async = target instanceof AsyncDelegate;
 		}
 
 		@Override
@@ -50,42 +49,53 @@ public class AsyncImpl implements Async {
 			System.out.println("invoke " + method.getName() + "("
 					+ Arrays.toString(args) + ")");
 
-			assert deferreds.get() == null;
-
+			Promise<?> promise = null;
 			try {
-				active.set(true);
-				deferreds.set(null);
-				Object result = method.invoke(target, args);
-				if (deferreds.get() == null) {
-					System.out.println("was not async " + method.getName()
-							+ "(" + Arrays.toString(args) + ")");
-					return result;
+				if (async)
+					promise = ((AsyncDelegate<?>) target).async(method, args);
+
+				if (promise == null) {
+					// Synchronous
+					Deferred<Object> deferred = new Deferred<>();
+					promise = deferred.getPromise();
+					try {
+						Object result = method.invoke(target, args);
+						deferred.resolve(result);
+					} catch (Exception e) {
+						deferred.fail(e);
+					}
 				}
+
+				results.set(promise);
+
+				Class<?> c = method.getReturnType();
+				if (c.isPrimitive()) {
+					return nulls.get(c);
+				} else
+					return null;
 
 			} catch (Throwable e) {
 				System.out.println("exception " + method.getName() + "("
 						+ Arrays.toString(args) + ") " + e);
 				throw e;
-			} finally {
-				active.set(null);
 			}
-			Class<?> c = method.getReturnType();
-			if (c.isPrimitive()) {
-				return nulls.get(c);
-			} else
-				return null;
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T mediate(T target) {
+		if (!(target instanceof AsyncDelegate))
+			return target;
+
+
 		Set<Class<?>> interfaces = new HashSet<>();
 		collectInterfaces(interfaces, target.getClass());
 		return (T) Proxy.newProxyInstance(target.getClass().getClassLoader(),
 				interfaces.toArray(new Class[interfaces.size()]),
-				new Handler<T>(target));
+				new AsyncHandler<T>(target));
 	}
+
 
 	private void collectInterfaces(Set<Class<?>> interfaces,
 			Class<? extends Object> clazz) {
@@ -104,34 +114,18 @@ public class AsyncImpl implements Async {
 
 	@Override
 	public <R> Promise<R> call(R value) {
-		if (deferreds.get() != null) {
-			System.out.println("invoke result  " + value + " is async");
-			@SuppressWarnings("unchecked")
-			Promise<R> promise = (Promise<R>) deferreds.get().getPromise();
-			deferreds.set(null);
-			return promise;
-		} else {
-			System.out.println("invoke result  " + value + " is sync");
-			Deferred<R> resolver = new Deferred<>();
-			resolver.resolve(value);
-			return resolver.getPromise();
+		@SuppressWarnings("unchecked")
+		Promise<R> promise = (Promise<R>) results.get();
+		if (promise == null) {
+			promise = Deferred.getDirectPromise(value);
 		}
+		results.set(null);
+		return promise;
 	}
 
-	@Override
-	public <T> Deferred<T> createDeferred() {
-		System.out.println("get resolver");
-		if (active.get()!= null) {
-			Deferred<T> resolver = new Deferred<>();
-			deferreds.set(resolver);
-			return resolver;
-		} else
-			return null;
-	}
 
 	@Override
 	public <R> Promise<R> hold(R r) {
 		return call(r).hold();
 	}
-
 }

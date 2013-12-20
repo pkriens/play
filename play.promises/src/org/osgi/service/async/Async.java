@@ -76,19 +76,4 @@ public interface Async {
 	 */
 	<R> Promise<R> hold(R r);
 
-	/**
-	 * This method is called by implementations that can execute their
-	 * invocations asynchronously. If this method is null, the method was
-	 * invoked synchronously and the implementation should not return until the
-	 * asynchronous request has been finalized. If it is not null, it should
-	 * return immediately and signal the result by resolving the returned
-	 * Deferred object. It is allowed that the Deferred is resolved with a
-	 * failure if the request surpasses a timeout.
-	 * 
-	 * @return A deferred or null
-	 * 
-	 * TODO maybe we should hand it a Promise?
-	 */
-	<T> Deferred<T> createDeferred();
-	
 }
