@@ -165,7 +165,7 @@ public class Deferred<T> {
 		private <R> void success(final Deferred<R> nextStage,
 				final Success<R, T> ok) throws Exception {
 			try {
-				final Promise<R> nextResult = ok.call(this);
+				final Promise<R> nextResult = ok.call(value);
 				if (nextResult == null) {
 
 					//
